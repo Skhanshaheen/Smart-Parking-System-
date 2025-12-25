@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Park Reservation Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #0d1117; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .navbar { background-color: #0d1117; border-bottom: 1px solid #30363d; }
+        .main-card { background-color: white; color: #333; border-radius: 15px; padding: 40px; margin-top: 30px; }
+        .stat-box { background-color: #f6f8fa; border-radius: 10px; padding: 15px; text-align: center; }
+        
+        .parking-card { 
+            border-radius: 12px; 
+            padding: 20px; 
+            text-align: center; 
+            font-weight: 600; 
+            margin-bottom: 15px; 
+            transition: all 0.2s; 
+            border: 2px solid transparent;
+            cursor: pointer; /* Makes everything clickable */
+        }
+        
+        .free { background-color: #f0fff4; color: #22863a; border-color: #dcffe4; }
+        .free:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 5px 15px rgba(34, 134, 58, 0.2);
+            border-color: #22863a;
+        }
+        
+        .booked { background-color: #fff5f5; color: #d73a49; border-color: #ffeef0; }
+        .booked:hover { 
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(215, 58, 73, 0.1);
+            border-color: #d73a49; 
+        }
+
+        .cancel-text {
+            display: block;
+            font-size: 10px;
+            color: #d73a49;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+
+        .tooltip-inner {
+            background-color: #0d1117;
+            padding: 12px;
+            border: 1px solid #30363d;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark px-4">
+    <a class="navbar-brand fw-bold" href="index.html">🅿️ EasyPark System</a>
+</nav>
+
+<div class="container">
+    <div class="main-card shadow-lg">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold m-0 text-dark">Parking Grid</h2>
+            <div class="d-flex align-items-center gap-3">
+                <input type="date" id="dateInput" class="form-control" onchange="loadParkingData()">
+                <button class="btn btn-primary fw-bold" onclick="loadParkingData()">Refresh</button>
+            </div>
+        </div>
+        
+        <div class="row g-3 mb-4 text-dark text-center">
+            <div class="col-md-4"><div class="stat-box">TOTAL<br><h4 id="total-val" class="fw-bold">20</h4></div></div>
+            <div class="col-md-4"><div class="stat-box text-danger">OCCUPIED<br><h4 id="booked-val" class="fw-bold">0</h4></div></div>
+            <div class="col-md-4"><div class="stat-box text-success">AVAILABLE<br><h4 id="free-val" class="fw-bold">20</h4></div></div>
+        </div>
+
+        <div id="parking-grid" class="row row-cols-2 row-cols-md-5 g-3"></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dateInput').value = today;
+
+    async function loadParkingData() {
+        const dateValue = document.getElementById("dateInput").value;
+        const grid = document.getElementById("parking-grid");
+        if (!dateValue) return;
+
+        const [y, m, d] = dateValue.split("-");
+        const formattedDate = `${d}-${m}-${y}`;
+
+        try {
+            const response = await fetch(`http://localhost:8080/api/spots?date=${formattedDate}`);
+            const data = await response.json();
+
+            if (data && data.ok) {
+                document.getElementById("booked-val").innerText = data.booked;
+                document.getElementById("free-val").innerText = data.free;
+                grid.innerHTML = ""; 
+
+                data.spots.forEach(spot => {
+                    const isBooked = spot.occupied;
+                    const cardClass = isBooked ? "booked" : "free";
+                    
+                    // Display different text based on status
+                    const statusHtml = isBooked 
+                        ? `RESERVED <span class="cancel-text">CLICK TO CANCEL</span>` 
+                        : `AVAILABLE`;
+                    
+                    const tooltipInfo = isBooked ? `<b>Details:</b> ${spot.details}` : "Click to book this spot";
+
+                    // The logic choice: Book or Cancel
+                    const action = isBooked 
+                        ? `onclick="handleCancel(event, '${spot.id}', '${data.date}')"` 
+                        : `onclick="location.href='book.html?id=${spot.id}&date=${formattedDate}'"`;
+
+                    grid.innerHTML += `
+                        <div class="col">
+                            <div class="parking-card ${cardClass} shadow-sm" ${action}
+                                 data-bs-toggle="tooltip" data-bs-html="true" title="${tooltipInfo}">
+                                <div style="font-size: 10px; opacity: 0.6;">${spot.id}</div>
+                                <div class="fs-4 py-1">Spot ${spot.id.replace("SPACE-", "")}</div>
+                                <div class="small text-uppercase" style="font-size: 11px;">${statusHtml}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Refresh Tooltips
+                const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.map(t => new bootstrap.Tooltip(t));
+            }
+        } catch (err) { console.error("Error:", err); }
+    }
+
+    async function handleCancel(evt, vehId, dateStr) {
+        evt.stopPropagation();
+        const pin = prompt("Enter 4-digit PIN to cancel reservation:");
+        if (!pin) return;
+
+        try {
+            const res = await fetch('http://localhost:8080/api/cancel-book', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vehId, date: dateStr, pin: String(pin) })
+            });
+            const result = await res.json();
+            if (result.ok) {
+                alert("Success: Reservation Cancelled");
+                loadParkingData();
+            } else {
+                alert("Error: " + result.message);
+            }
+        } catch (e) { alert("Server connection failed."); }
+    }
+
+    window.onload = loadParkingData;
+</script>
+</body>
+</html>

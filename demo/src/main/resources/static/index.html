@@ -141,7 +141,7 @@
         if (!pin) return;
 
         try {
-            const res = await fetch('http://localhost:8080/api/cancel-book', {
+            const res = await fetch('/api/cancel-book', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ vehId, date: dateStr, pin: String(pin) })

@@ -69,10 +69,8 @@
     document.getElementById('dateDisplay').value = bookingDate;
 
     async function processBooking() {
-        // 1. Get the PIN value from the input
         const pinValue = document.getElementById('pin').value;
 
-        // 2. Simple validation check
         if (!pinValue || pinValue.length !== 4) {
             alert("Please enter a 4-digit security PIN.");
             return;
@@ -86,13 +84,14 @@
             reg: document.getElementById('reg').value,
             startDate: bookingDate,
             days: document.getElementById('days').value,
-            pin: String(pinValue) // <-- ADDED THIS: Sends the PIN to Java
+            pin: String(pinValue)
         };
 
         if(!payload.name || !payload.brand) return alert("Please fill in your name and car brand.");
 
         try {
-            const res = await fetch('http://localhost:8080/api/quick-book', {
+            // FIXED: Pointing to the correct booking API and fixed the syntax
+            const res = await fetch('/api/quick-book', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
@@ -106,6 +105,7 @@
                 alert("Error: " + data.message);
             }
         } catch (error) {
+            console.error(error);
             alert("Server Error: Check if your Spring Boot app is running.");
         }
     }

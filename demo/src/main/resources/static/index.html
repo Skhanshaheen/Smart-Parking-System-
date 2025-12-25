@@ -92,7 +92,7 @@
         const formattedDate = `${d}-${m}-${y}`;
 
         try {
-            const response = await fetch(`http://localhost:8080/api/spots?date=${formattedDate}`);
+            const response = await fetch('/api/spots?date=' + formattedDate);
             const data = await response.json();
 
             if (data && data.ok) {

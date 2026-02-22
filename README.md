@@ -2,7 +2,7 @@
 
 A high-performance, full-stack web application for real-time parking management. Built with a Java Spring Boot backend and deployed using modern DevOps practices (Docker & Cloud MicroVMs).
 
-**🌐 [View Live Demo](https://your-app-name.koyeb.app)**
+**🌐 [View Live Demo](different-nedda-none12334-a145be5e.koyeb.app/)**
 
 ---
 
